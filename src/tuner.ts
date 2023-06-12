@@ -23,11 +23,13 @@ export class Tuner {
     MIN_ADC_VALUE: number = 451;
     MAX_ADC_VALUE: number = 748;
     SLOP: number = 5;
-    WINDOW_SIZE = 10;
+    WINDOW_SIZE = 20;
 
     adc_window: number[] = [];
     adc_to_url: Record<number, string> = {};
-    mplayer_process: ChildProcessWithoutNullStreams | undefined = undefined;
+    radio_process: ChildProcessWithoutNullStreams | undefined = undefined;
+    static_process: ChildProcessWithoutNullStreams | undefined = undefined;
+
 
     public constructor() {
         this.adc = new AdcConverter();
@@ -55,32 +57,54 @@ export class Tuner {
         }
     }
 
-    
-
-    stopPlay() {
-        if (this.mplayer_process) {
-            this.mplayer_process.kill('SIGKILL');
-        }
-        this.mplayer_process = undefined;
-    }
-
-
     playUrl(url: string) {
-        this.stopPlay();
-        this.mplayer_process = spawn('mplayer', ['-loop 0 -ao alsa', url]);
+            this.radio_process = spawn('mplayer',  ["-ao", "pulse", url]);
+        console.log(`Starting play process with PID ${this.radio_process.pid}`);
     }
+
+    stopUrl() {
+        if (this.radio_process) {
+            console.log(`Killing play process ${this.radio_process.pid}`);
+            this.radio_process.kill('SIGKILL');
+        }
+        this.radio_process = undefined;
+    }
+
+    stopAll() {
+        this.stopUrl();
+        this.killStatic();
+    }
+
 
     playStatic() {
-        const file_loc = "/static1.wav";
-        this.stopPlay();
-        this.mplayer_process = spawn('mplayer', [file_loc]);
+        if (!this.static_process) {
+            const file_loc = "/static1.wav";
+            this.static_process = spawn('mplayer', ["-loop", "0",  "-ao",  "pulse", file_loc]);
+        } else {
+            console.log("Unpausing static");
+            this.static_process.kill('SIGCONT');
+        }
+    }
+
+    pauseStatic(){
+        if (this.static_process) {
+            console.log("Pausing static");
+            this.static_process.kill('SIGSTOP');
+        }
+    }
+
+    killStatic(){
+        if (this.static_process) {
+            console.log("Killing static")
+            this.static_process.kill('SIGKILL');
+        }
     }
 
 
     public async tune() {
 
-        var last_adc_value = 0
-        const tuning_hysteresis = 10;
+        var last_adc_value = 0;
+        const tuning_hysteresis = 3;
         while (true) {
             try {
                 // Read a tuning value
@@ -92,18 +116,21 @@ export class Tuner {
                 const window_sum = this.adc_window.reduce((a, b) => a + b, 0);
                 const filtered_adc_value = Math.floor(window_sum / this.WINDOW_SIZE);
 
-                console.log(`ADC: ${adc_value}, filtered: ${filtered_adc_value}`);
+                console.log(`ADC: ${adc_value}, filtered: ${filtered_adc_value} last=${last_adc_value}`);
                 
                 if (Math.abs(filtered_adc_value - last_adc_value) > tuning_hysteresis) {
-                    if (adc_value in this.adc_to_url) {
-                        const url = this.adc_to_url[adc_value];
+                    if (filtered_adc_value in this.adc_to_url) {
+                        const url = this.adc_to_url[filtered_adc_value];
                         console.log(`Playing: ${url}`);
+                        this.pauseStatic();
+                        this.stopUrl();
                         this.playUrl(url);
                     } else {
-                        console.log("Playing static...");
+                        console.log("Playing static");
+                        this.stopUrl()
                         this.playStatic()
                     }
-                    last_adc_value = adc_value;
+                    last_adc_value = filtered_adc_value;
                 }
 
             } catch (e) {
