@@ -33,7 +33,7 @@ export class AdcConverter {
 
         this.spi.transferSync(message);
         const out = (message[0].receiveBuffer[1] << 8 | message[0].receiveBuffer[2]) & 0x03FF
-        console.log(`Received ADC output: ${out}`);
+        //console.log(`Received ADC output: ${out}`);
         return out
     }
 
