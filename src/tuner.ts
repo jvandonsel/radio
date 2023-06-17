@@ -158,20 +158,34 @@ export class Tuner {
         var locked_center = 0;
 
         // How close we need to be to a station center to lock onto it
-        const PULL_IN_THRESHOLD = 5;
+        const PULL_IN_THRESHOLD = 4;
         // How far we need to wander from the center of a locked station to unlock from it
-        const PULL_OFF_THRESHOLD = 7;
+        const PULL_OFF_THRESHOLD = 6;
 
-        this.playStatic();
 
         // Seed the FIR filter with the current raw ADC value
-        this.initFilter(this.adc.readAdc());
+        const adc = this.adc.readAdc();
+        console.log(`Seeding filter with ${adc}`);
+        this.initFilter(adc);
+
+        // Initial tuning
+        let filtered_adc_value = this.getFilteredAdcValue();
+        const nearest_center = this.findNearestCenter(filtered_adc_value);  
+        if (Math.abs(nearest_center - filtered_adc_value) <= PULL_IN_THRESHOLD) {
+            const url = this.adc_to_url[nearest_center];
+            console.log(`Playing. center:${nearest_center} adc:${filtered_adc_value} ${url}`);
+            locked_center = nearest_center;
+            is_locked = true;
+            this.playRadio(url);
+        } else {
+            this.playStatic();
+        }
 
         while (true) {
             await sleep(100);
 
             try {
-                const filtered_adc_value = this.getFilteredAdcValue();
+                filtered_adc_value = this.getFilteredAdcValue();
                 
                 if (is_locked) {
                     // Currently Locked

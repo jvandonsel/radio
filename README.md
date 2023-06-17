@@ -16,4 +16,7 @@ I used the [Libre Potato](https://libre.computer/products/aml-s905x-cc/) as my m
 ## Software
 TODO
 
+## Tuning
+I've spent quite a bit of time trying to replicate the feel of tuning an analog radio with this device. Static is played between stations, and the radio tries to "lock onto" nearby stations.  It's still not the same experience as with an actual analog radio, though, and improvements will be coming.
+
 
