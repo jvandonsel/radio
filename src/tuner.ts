@@ -1,3 +1,9 @@
+/**
+ * Tuning process.
+ * Monitors the tuning knob position by reading A/D values and tunes in the appropriate
+ * station, or plays static if we're between stations.
+ */
+
 import { AdcConverter } from "./adc";
 import { sleep } from "./utils";
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
@@ -9,25 +15,30 @@ export class Tuner {
     MIN_ADC_VALUE: number = 451;
     MAX_ADC_VALUE: number = 748;
 
-    LOOP_OPTIONS = ["-loop", "0",  "-ao",  "pulse", "-slave", "-really-quiet"];
+    MPLAYER_OPTIONS = ["-loop", "0",  "-ao",  "pulse", "-slave", "-really-quiet"];
 
     // Static file
     // TODO: Move this someplace else
     STATIC_FILE: string = "/static.wav";
 
-    // Width of each station on the dial in A/D values
-    WIDTH: number = 1;
-
     // Filter window size in samples
     FILTER_WINDOW_SIZE = 20;
-
-    adc: AdcConverter;
+    // Filter
     adc_window: number[] = [];
+
+    // A/D Converter
+    adc: AdcConverter;
+
+    // A list of ADC values corresponding to radio stations
+    adc_stations: number[] = [];
+
+    // Map of ADC values to radio station URL
     adc_to_url: Record<number, string> = {};
+
+    // Keeping separate radio and static processes active seems to make the transition between
+    // static/radio faster than having a single process that switches between the static file and the radio URL.
     radio_process: ChildProcessWithoutNullStreams | undefined = undefined;
     static_process: ChildProcessWithoutNullStreams | undefined = undefined;
-    adc_centers: number[] = [];
-
 
     public constructor() {
         this.adc = new AdcConverter();
@@ -36,88 +47,76 @@ export class Tuner {
         console.log(`Found ${num_urls} URLs`);
 
         // Space our URLs across the dial evenly.
-        const url_step = Math.floor((this.MAX_ADC_VALUE - this.MIN_ADC_VALUE) / num_urls);
-        console.log(`step size=${url_step}`);
+        // Making sure that both edges have a station.
+        const url_step = Math.floor((this.MAX_ADC_VALUE - this.MIN_ADC_VALUE) / (num_urls - 1));
+        console.log(`step size=${url_step} between ${this.MIN_ADC_VALUE} and ${this.MAX_ADC_VALUE}`);
 
         for (let i = 0; i < num_urls; ++i) {
             const center = url_step * i + this.MIN_ADC_VALUE;
-            this.adc_centers.push(center);
-
             console.log(`Mapping center ${center} to ${urls[i]}`);
-
-            // Give each station some width on the dial
-            for (let k = -this.WIDTH; k <= this.WIDTH; ++k) {
-                this.adc_to_url[center + k] = urls[i];
-            }
-        }
-
-        // Initialize FIR filter
-        for (let i = 0; i < this.FILTER_WINDOW_SIZE; ++i) {
-            this.adc_window.push(0);
+            this.adc_stations.push(center);
+            this.adc_to_url[center] = urls[i];
         }
     }
 
+    /**
+     * Init the FIR filter with the given value.
+     * @param Value to fill the window with.
+     */
+    initFilter(value: number) {
+        this.adc_window.length = 0;
+        for (let i = 0; i < this.FILTER_WINDOW_SIZE; ++i) {
+            this.adc_window.push(value);
+        }
+    }
+    
     /**
      * Start playing the given URL 
      * @param url URL to play
      */
-    playUrl(url: string) {
+    playRadio(url: string) {
         if (!this.radio_process) {
-            this.radio_process = spawn('mplayer',  [...this.LOOP_OPTIONS, url], {stdio: ['pipe', 'pipe', 'pipe']});
+            this.radio_process = spawn('mplayer',  [...this.MPLAYER_OPTIONS, url], {stdio: ['pipe', 'pipe', 'pipe']});
             console.log(`Starting play process with PID ${this.radio_process.pid}`);
         } else {
             // Already playing, change the URL
+            // FIXME: This seems to cause a small piece of the previous URL to be played before the new one starts.
+            console.log(`Changing radio URL to ${url}`);
             this.radio_process.stdio[0].write(`loadfile ${url}\n`);
-            // TODO: avoid using the toggle for pause
-            console.log("Unpausing play");
-            this.radio_process.stdio[0].write('pause\n');
         }
     }
 
     /**
-     * Stop playing the current URL.
+     * Start playing static.
      */
-    stopPlayingUrl() {
-        if (this.radio_process) {
-            console.log(`Pausing play process ${this.radio_process.pid}`);
-            this.radio_process.stdio[0].write('pause\n');
-        }
-    }
-
-    /**
-     * Stop all sound
-     */
-    stopAll() {
-        this.stopPlayingUrl();
-        this.killStatic();
-    }
-
-    /**
-     * Resume playing static, or start playing static if we haven't yet.
-     */
-    resumeStatic() {
+    playStatic() {
         if (!this.static_process) {
-            this.static_process = spawn('mplayer', [...this.LOOP_OPTIONS, this.STATIC_FILE]);
+            this.static_process = spawn('mplayer',  [...this.MPLAYER_OPTIONS, this.STATIC_FILE], {stdio: ['pipe', 'pipe', 'pipe']});
+            console.log(`Starting static process with PID ${this.static_process.pid}`);
         } else {
-            console.log("Unpausing static");
-            this.static_process.kill('SIGCONT');
+            // Process already exists, unpause it
+            console.log('Unpausing static');
+            this.static_process.stdio[0].write('pause\n');
         }
     }
 
     /**
-     * Pause playing static.
+     * Pause static
      */
-    pauseStatic(){
+    pauseStatic() {
         if (this.static_process) {
-            console.log("Pausing static");
-            this.static_process.kill('SIGSTOP');
+            console.log('Pausing static');
+            this.static_process.stdio[0].write('pause\n');
         }
     }
 
-    killStatic(){
-        if (this.static_process) {
-            console.log("Killing static")
-            this.static_process.kill('SIGKILL');
+    /**
+     * Pause playback
+     */
+    pauseRadio() {
+        if (this.radio_process) {
+            console.log('Pausing radio');
+            this.radio_process.stdio[0].write('pause\n');
         }
     }
 
@@ -146,7 +145,7 @@ export class Tuner {
      */
     findNearestCenter(adc_value: number): number {
         // TODO: cache these?
-        return this.adc_centers.reduce((a, b) => Math.abs(b - adc_value) < Math.abs(a - adc_value) ? b : a);
+        return this.adc_stations.reduce((a, b) => Math.abs(b - adc_value) < Math.abs(a - adc_value) ? b : a);
     }
 
     /**
@@ -161,10 +160,12 @@ export class Tuner {
         // How close we need to be to a station center to lock onto it
         const PULL_IN_THRESHOLD = 5;
         // How far we need to wander from the center of a locked station to unlock from it
-        const PULL_OFF_THRESHOLD = 8;
+        const PULL_OFF_THRESHOLD = 7;
 
-        // Start playing static
-        this.resumeStatic();
+        this.playStatic();
+
+        // Seed the FIR filter with the current raw ADC value
+        this.initFilter(this.adc.readAdc());
 
         while (true) {
             await sleep(100);
@@ -175,10 +176,10 @@ export class Tuner {
                 if (is_locked) {
                     // Currently Locked
                     if (Math.abs(filtered_adc_value - locked_center) > PULL_OFF_THRESHOLD) {
-                        console.log(`Unlocking, filtered: ${filtered_adc_value}`);
+                        console.log(`Unlocking, filtered:${filtered_adc_value} last_locked:${locked_center}`);
                         is_locked = false;
-                        this.stopPlayingUrl()
-                        this.resumeStatic()
+                        this.pauseRadio();
+                        this.playStatic();
                     } else {
                         // Still locked. Keep playing.
                     }
@@ -188,12 +189,11 @@ export class Tuner {
                     const nearest_center = this.findNearestCenter(filtered_adc_value);  
                     if (Math.abs(nearest_center - filtered_adc_value) <= PULL_IN_THRESHOLD) {
                         const url = this.adc_to_url[nearest_center];
-                        console.log(`Playing ${nearest_center} ${url}`);
+                        console.log(`Playing. center:${nearest_center} adc:${filtered_adc_value} ${url}`);
                         locked_center = nearest_center;
                         is_locked = true;
                         this.pauseStatic();
-                        this.stopPlayingUrl();
-                        this.playUrl(url);
+                        this.playRadio(url);
                     } else {
                         // Stay unlocked
                     }
