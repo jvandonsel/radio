@@ -9,11 +9,11 @@ export class Tuner {
     MIN_ADC_VALUE: number = 451;
     MAX_ADC_VALUE: number = 748;
 
-    MPLAYER_OPTIONS = ["-loop", "0",  "-ao",  "pulse", "-really-quiet"];
+    LOOP_OPTIONS = ["-loop", "0",  "-ao",  "pulse", "-slave", "-really-quiet"];
 
     // Static file
     // TODO: Move this someplace else
-    STATIC_FILE: string = "/static1.wav";
+    STATIC_FILE: string = "/static.wav";
 
     // Width of each station on the dial in A/D values
     WIDTH: number = 1;
@@ -62,8 +62,16 @@ export class Tuner {
      * @param url URL to play
      */
     playUrl(url: string) {
-        this.radio_process = spawn('mplayer',  [...this.MPLAYER_OPTIONS, url], {stdio: ['pipe', 'pipe', 'pipe']});
-        console.log(`Starting play process with PID ${this.radio_process.pid}`);
+        if (!this.radio_process) {
+            this.radio_process = spawn('mplayer',  [...this.LOOP_OPTIONS, url], {stdio: ['pipe', 'pipe', 'pipe']});
+            console.log(`Starting play process with PID ${this.radio_process.pid}`);
+        } else {
+            // Already playing, change the URL
+            this.radio_process.stdio[0].write(`loadfile ${url}\n`);
+            // TODO: avoid using the toggle for pause
+            console.log("Unpausing play");
+            this.radio_process.stdio[0].write('pause\n');
+        }
     }
 
     /**
@@ -71,10 +79,9 @@ export class Tuner {
      */
     stopPlayingUrl() {
         if (this.radio_process) {
-            console.log(`Killing play process ${this.radio_process.pid}`);
-            this.radio_process.stdio[0].write('q');
+            console.log(`Pausing play process ${this.radio_process.pid}`);
+            this.radio_process.stdio[0].write('pause\n');
         }
-        this.radio_process = undefined;
     }
 
     /**
@@ -90,7 +97,7 @@ export class Tuner {
      */
     resumeStatic() {
         if (!this.static_process) {
-            this.static_process = spawn('mplayer', [...this.MPLAYER_OPTIONS, this.STATIC_FILE]);
+            this.static_process = spawn('mplayer', [...this.LOOP_OPTIONS, this.STATIC_FILE]);
         } else {
             console.log("Unpausing static");
             this.static_process.kill('SIGCONT');
@@ -168,7 +175,7 @@ export class Tuner {
                 if (is_locked) {
                     // Currently Locked
                     if (Math.abs(filtered_adc_value - locked_center) > PULL_OFF_THRESHOLD) {
-                        console.log("Unlocking");
+                        console.log(`Unlocking, filtered: ${filtered_adc_value}`);
                         is_locked = false;
                         this.stopPlayingUrl()
                         this.resumeStatic()
