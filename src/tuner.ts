@@ -80,9 +80,9 @@ export class Tuner {
             console.log(`Starting play process with PID ${this.radio_process.pid}`);
         } else {
             // Already playing, change the URL
-            // FIXME: This seems to cause a small piece of the previous URL to be played before the new one starts.
             console.log(`Changing radio URL to ${url}`);
-            this.radio_process.stdio[0].write(`loadfile ${url}\n`);
+            this.radio_process.stdio[0].write(`pausing_keep_force loadfile ${url}\n`);
+            this.radio_process.stdio[0].write('pause\n');            
         }
     }
 
