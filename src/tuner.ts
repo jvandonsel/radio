@@ -7,7 +7,8 @@
 import { AdcConverter } from "./adc";
 import { sleep } from "./utils";
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
-import { urls } from "./urls";
+import { getUrls } from "./urls";
+import { poll_band_selector as pollBandSelector, Band } from "./band-selector";
 
 export class Tuner {
 
@@ -30,13 +31,15 @@ export class Tuner {
     adc_window: number[] = [];
 
     // A/D Converter
-    adc: AdcConverter;
+    adc: AdcConverter = new AdcConverter();
 
     // A list of ADC values corresponding to radio stations
     adc_stations: number[] = [];
 
     // Map of ADC values to radio station URL
     adc_to_url: Record<number, string> = {};
+
+    current_band: Band = Band.OFF;
 
     // Keeping separate radio and static processes active seems to make the transition between
     // static/radio faster than having a single process that switches between the static file and the radio URL.
@@ -46,10 +49,19 @@ export class Tuner {
     is_radio_playing: boolean = false;
     is_static_playing: boolean = false;
 
-    public constructor() {
-        this.adc = new AdcConverter();
+    /**
+     * Given a selected band, populates the 'adc_stations' and 'adc_to_url' data structures
+     * @param band 
+     * @returns 
+     */
+    populateBand(band: Band) {
 
-        const num_urls = Object.keys(urls).length;
+        console.log(`Populating band ${band}`);
+
+        // Get the list of URLs for the given band
+        const urls = getUrls(band);
+    
+        const num_urls = urls.length;
         console.log(`Found ${num_urls} URLs`);
 
         // Space our URLs across the dial evenly.
@@ -57,6 +69,8 @@ export class Tuner {
         const url_step = Math.floor((this.MAX_ADC_VALUE - this.MIN_ADC_VALUE) / (num_urls - 1));
         console.log(`step size=${url_step} between ${this.MIN_ADC_VALUE} and ${this.MAX_ADC_VALUE}`);
 
+        this.adc_stations = [];
+        this.adc_to_url = {};
         for (let i = 0; i < num_urls; ++i) {
             const center = url_step * i + this.MIN_ADC_VALUE;
             console.log(`Mapping center ${center} to ${urls[i]}`);
@@ -179,30 +193,34 @@ export class Tuner {
         // How far we need to wander from the center of a locked station to unlock from it
         const PULL_OFF_THRESHOLD = 7;
 
-
         // Seed the FIR filter with the current raw ADC value
         const adc = this.adc.readAdc();
         console.log(`Seeding filter with ${adc}`);
         this.initFilter(adc);
 
-        // Initial tuning
-        let filtered_adc_value = this.getFilteredAdcValue();
-        const nearest_center = this.findNearestCenter(filtered_adc_value);  
-        if (Math.abs(nearest_center - filtered_adc_value) <= PULL_IN_THRESHOLD) {
-            const url = this.adc_to_url[nearest_center];
-            console.log(`Playing. center:${nearest_center} adc:${filtered_adc_value} ${url}`);
-            locked_center = nearest_center;
-            is_locked = true;
-            this.playRadio(url);
-        } else {
-            this.playStatic();
-        }
-
         while (true) {
             await sleep(100);
 
+            // Check if our band selector has changed
+            const band = pollBandSelector();
+            if (band === Band.OFF) {
+                this.pauseRadio();
+                this.pauseStatic();
+                this.current_band = Band.OFF;
+                await sleep(500);
+                continue;
+            } else if (band !== this.current_band) {
+                console.log(`Switching band to ${band}`);
+                this.current_band = band;
+                this.populateBand(band);
+                is_locked = false;
+                locked_center = 0;
+                this.pauseRadio();
+                this.pauseStatic();
+            }
+
             try {
-                filtered_adc_value = this.getFilteredAdcValue();
+                let filtered_adc_value = this.getFilteredAdcValue();
                 
                 if (is_locked) {
                     // Currently Locked
