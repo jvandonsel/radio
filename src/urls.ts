@@ -8,8 +8,7 @@ export function getUrls(band: Band) {
     } else if (band == Band.B) {
         return cbc_urls;
     } else if (band == Band.C) {
-        //TODO
-        return [];
+        return us_urls;
     } else {
         return [];
     }
@@ -57,3 +56,7 @@ export const cbc_urls = [
     "https://rcavliveaudio.akamaized.net/hls/live/2006979/M-7QMTL0_MTL/master.m3u8"
 ];
 
+export const us_urls = [
+    "https://streams.audio.wgbh.org/wgbh",
+    "https://icecast-stream.wbur.org/wbur_www"
+];

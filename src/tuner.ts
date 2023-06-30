@@ -19,7 +19,7 @@ export class Tuner {
     RADIO_VOLUME = 80;
     STATIC_VOLUME = 100;
 
-    MPLAYER_OPTIONS = ["-loop", "0",  "-ao",  "pulse", "-slave", "-really-quiet"];
+    MPLAYER_OPTIONS = ["-loop", "0", "-ao", "pulse", "-slave", "-really-quiet"];
 
     // Static file
     // TODO: Move this file someplace else
@@ -60,7 +60,7 @@ export class Tuner {
 
         // Get the list of URLs for the given band
         const urls = getUrls(band);
-    
+
         const num_urls = urls.length;
         console.log(`Found ${num_urls} URLs`);
 
@@ -89,7 +89,7 @@ export class Tuner {
             this.adc_window.push(value);
         }
     }
-    
+
     /**
      * Start playing the given URL 
      * @param url URL to play
@@ -98,11 +98,11 @@ export class Tuner {
         if (this.is_radio_playing) return;
 
         if (!this.radio_process) {
-            this.radio_process = spawn('mplayer',  [...this.MPLAYER_OPTIONS, '-volume', `${this.RADIO_VOLUME}`, url], {stdio: ['pipe', 'pipe', 'pipe']});
+            this.radio_process = spawn('mplayer', [...this.MPLAYER_OPTIONS, '-volume', `${this.RADIO_VOLUME}`, url], { stdio: ['pipe', 'pipe', 'pipe'] });
         } else {
             // Already playing, change the URL
             this.radio_process.stdio[0].write(`pausing_keep_force loadfile ${url}\n`);
-            this.radio_process.stdio[0].write('pause\n');            
+            this.radio_process.stdio[0].write('pause\n');
         }
         this.is_radio_playing = true;
     }
@@ -114,7 +114,7 @@ export class Tuner {
         if (this.is_static_playing) return;
 
         if (!this.static_process) {
-            this.static_process = spawn('mplayer',  [...this.MPLAYER_OPTIONS, '-volume', `${this.STATIC_VOLUME}`, this.STATIC_FILE], {stdio: ['pipe', 'pipe', 'pipe']});
+            this.static_process = spawn('mplayer', [...this.MPLAYER_OPTIONS, '-volume', `${this.STATIC_VOLUME}`, this.STATIC_FILE], { stdio: ['pipe', 'pipe', 'pipe'] });
         } else {
             // Process already exists, unpause it
             console.log('Playing static');
@@ -221,7 +221,7 @@ export class Tuner {
 
             try {
                 let filtered_adc_value = this.getFilteredAdcValue();
-                
+
                 if (is_locked) {
                     // Currently Locked
                     if (Math.abs(filtered_adc_value - locked_center) > PULL_OFF_THRESHOLD) {
@@ -235,7 +235,7 @@ export class Tuner {
                 } else {
                     // Currently not locked. Check if we should lock on a station.
                     // Find the nearest center ADC value and if it's close enough lock onto it.
-                    const nearest_center = this.findNearestCenter(filtered_adc_value);  
+                    const nearest_center = this.findNearestCenter(filtered_adc_value);
                     if (Math.abs(nearest_center - filtered_adc_value) <= PULL_IN_THRESHOLD) {
                         const url = this.adc_to_url[nearest_center];
                         console.log(`Locking. center:${nearest_center} adc:${filtered_adc_value} ${url}`);
