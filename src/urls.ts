@@ -23,7 +23,6 @@ export const bbc_urls = [
     "http://a.files.bbci.co.uk/media/live/manifesto/audio/simulcast/hls/nonuk/sbr_low/ak/bbc_radio_three.m3u8",
     "http://a.files.bbci.co.uk/media/live/manifesto/audio/simulcast/hls/nonuk/sbr_low/ak/bbc_radio_fourfm.m3u8",
     "http://a.files.bbci.co.uk/media/live/manifesto/audio/simulcast/hls/nonuk/sbr_low/ak/bbc_radio_four_extra.m3u8",
-    "http://a.files.bbci.co.uk/media/live/manifesto/audio/simulcast/hls/nonuk/sbr_low/ak/bbc_radio_five_live.m3u8",
     "http://a.files.bbci.co.uk/media/live/manifesto/audio/simulcast/hls/nonuk/sbr_low/ak/bbc_6music.m3u8",
     "http://a.files.bbci.co.uk/media/live/manifesto/audio/simulcast/hls/nonuk/sbr_low/ak/bbc_world_service.m3u8"
 ];
@@ -32,16 +31,13 @@ export const cbc_urls = [
     // Taken from https://gist.github.com/nevillepark/d8358256e05a23250ad845a70776776e
 
     // CBC Music (Eastern)
-    "http://cbcmp3.ic.llnwd.net/stream/cbcmp3_cbc_r2_tor",
+    "http://cbcmp3.ic.llnwd.net/stream/cbcmp3_cbc_r1_tor",
 
     // CBC Music (Eastern)
     "https://cbcradiolive.akamaized.net/hls/live/2041057/ES_R2ETR/master.m3u8",
 
     // CBC Radio 1 (NB/Saint John)
     "http://cbcmp3.ic.llnwd.net/stream/cbcmp3_cbc_r1_snb",
-
-    // CBC Radio 1 (BC/Vancouver)
-    "http://cbcmp3.ic.llnwd.net/stream/cbcmp3_cbc_r1_vcr",
 
     // CBC Radio 1 (ON/Toronto)
     "http://cbcmp3.ic.llnwd.net/stream/cbcmp3_cbc_r1_tor",
@@ -57,6 +53,13 @@ export const cbc_urls = [
 ];
 
 export const us_urls = [
-    "https://streams.audio.wgbh.org/wgbh",
-    "https://icecast-stream.wbur.org/wbur_www"
+    "http://whyy-hd.streamguys1.com/whyy-hd-mp3",
+    "http://wmbr.org:8000/hi",
+    "http://22223.live.streamtheworld.com:80/WGVUFM_SC",
+    "https://playerservices.streamtheworld.com/api/livestream-redirect/KWITFM.mp3",
+    "https://cms.stream.publicradio.org/cms.mp3",
+    "http://66.42.114.24:8000/live",
+    "http://22113.live.streamtheworld.com:80/WNEDFM_SC",
+    "http://live.wostreaming.net/direct/ppm-jazz24mp3-ibc1"
+    
 ];

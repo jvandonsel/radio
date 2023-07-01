@@ -25,11 +25,11 @@ export class Tuner {
     // TODO: Move this file someplace else
     STATIC_FILE: string = "/static.wav";
 
-    // Filter window size in samples
+    // Sliding window filter 
     FILTER_WINDOW_SIZE = 20;
-    // Filter
     adc_window: number[] = [];
-
+    adc_window_sum: number = 0;
+    
     // A/D Converter
     adc: AdcConverter = new AdcConverter();
 
@@ -80,7 +80,7 @@ export class Tuner {
     }
 
     /**
-     * Init the FIR filter with the given value.
+     * Init the sliding window filter with the given value.
      * @param Value to fill the window with.
      */
     initFilter(value: number) {
@@ -88,6 +88,7 @@ export class Tuner {
         for (let i = 0; i < this.FILTER_WINDOW_SIZE; ++i) {
             this.adc_window.push(value);
         }
+        this.adc_window_sum = value * this.FILTER_WINDOW_SIZE;
     }
 
     /**
@@ -102,7 +103,7 @@ export class Tuner {
         } else {
             // Already playing, change the URL
             this.radio_process.stdio[0].write(`pausing_keep_force loadfile ${url}\n`);
-            this.radio_process.stdio[0].write('pause\n');
+            this.radio_process.stdio[0].write('pausing_keep pause\n');
         }
         this.is_radio_playing = true;
     }
@@ -118,7 +119,7 @@ export class Tuner {
         } else {
             // Process already exists, unpause it
             console.log('Playing static');
-            this.static_process.stdio[0].write('pause\n');
+            this.static_process.stdio[0].write('pausing_keep pause\n');
         }
         this.is_static_playing = true;
     }
@@ -131,7 +132,7 @@ export class Tuner {
 
         if (this.static_process) {
             console.log('Pausing static');
-            this.static_process.stdio[0].write('pause\n');
+            this.static_process.stdio[0].write('pausing_toggle pause\n');
         }
 
         this.is_static_playing = false;
@@ -145,7 +146,7 @@ export class Tuner {
 
         if (this.radio_process) {
             console.log('Pausing radio');
-            this.radio_process.stdio[0].write('pause\n');
+            this.radio_process.stdio[0].write('pausing_toggle pause\n');
         }
 
         this.is_radio_playing = false;
@@ -161,11 +162,11 @@ export class Tuner {
 
         // Add to sliding window filter and get the filtered value
         this.adc_window.push(raw_value);
-        this.adc_window.shift();
-        const window_sum = this.adc_window.reduce((a, b) => a + b, 0);
-        const filtered_value = Math.floor(window_sum / this.FILTER_WINDOW_SIZE);
+        this.adc_window_sum += raw_value;
+        this.adc_window_sum -= this.adc_window.shift() ?? 0;
+        const filtered_value = Math.floor(this.adc_window_sum / this.FILTER_WINDOW_SIZE);
 
-        console.log(`ADC: ${raw_value}, filtered: ${filtered_value}`);
+       // console.log(`ADC: ${raw_value}, filtered: ${filtered_value}`);
 
         return filtered_value;
     }
@@ -187,13 +188,14 @@ export class Tuner {
 
         var is_locked = false;
         var locked_center = 0;
+        var first_tune_on_band = true;
 
         // How close we need to be to a station center to lock onto it
         const PULL_IN_THRESHOLD = 3;
         // How far we need to wander from the center of a locked station to unlock from it
         const PULL_OFF_THRESHOLD = 7;
 
-        // Seed the FIR filter with the current raw ADC value
+        // Seed the sliding window with the current raw ADC value
         const adc = this.adc.readAdc();
         console.log(`Seeding filter with ${adc}`);
         this.initFilter(adc);
@@ -203,40 +205,50 @@ export class Tuner {
 
             // Check if our band selector has changed
             const band = pollBandSelector();
-            if (band === Band.OFF) {
-                this.pauseRadio();
-                this.pauseStatic();
-                this.current_band = Band.OFF;
-                await sleep(500);
-                continue;
-            } else if (band !== this.current_band) {
+            if (band !== this.current_band) {
                 console.log(`Switching band to ${band}`);
                 this.current_band = band;
-                this.populateBand(band);
-                is_locked = false;
-                locked_center = 0;
-                this.pauseRadio();
-                this.pauseStatic();
+                first_tune_on_band = true;
+                if (band == Band.OFF) {
+                    // Switching off
+                    this.pauseRadio();
+                    this.pauseStatic();
+                } else {
+                    // Switching to a different band
+                    this.populateBand(band);
+                    is_locked = false;
+                    locked_center = 0;
+                    this.pauseRadio();
+                    this.pauseStatic();
+                }
+            }
+
+            if (band === Band.OFF) {
+                await sleep(400);
+                continue;
             }
 
             try {
+                // Get the tuning knob A/D value
                 let filtered_adc_value = this.getFilteredAdcValue();
 
                 if (is_locked) {
                     // Currently Locked
                     if (Math.abs(filtered_adc_value - locked_center) > PULL_OFF_THRESHOLD) {
+                        // Unlock
                         console.log(`Unlocking, filtered:${filtered_adc_value} last_locked:${locked_center}`);
                         is_locked = false;
                         this.pauseRadio();
                         this.playStatic();
                     } else {
-                        // Still locked. Keep playing.
+                        // Still locked. Keep playing radio.
                     }
                 } else {
                     // Currently not locked. Check if we should lock on a station.
                     // Find the nearest center ADC value and if it's close enough lock onto it.
                     const nearest_center = this.findNearestCenter(filtered_adc_value);
                     if (Math.abs(nearest_center - filtered_adc_value) <= PULL_IN_THRESHOLD) {
+                        // Lock
                         const url = this.adc_to_url[nearest_center];
                         console.log(`Locking. center:${nearest_center} adc:${filtered_adc_value} ${url}`);
                         locked_center = nearest_center;
@@ -244,13 +256,17 @@ export class Tuner {
                         this.pauseStatic();
                         this.playRadio(url);
                     } else {
-                        // Stay unlocked
-                        console.log(`Nearest center ${nearest_center}`);
+                        // Still unlocked unlocked, keep playing static.
+                        if (first_tune_on_band) {
+                            this.playStatic();
+                        }
                     }
                 }
             } catch (e) {
                 console.error(`Caught error reading ADC: ${e}\n`);
             }
+
+            first_tune_on_band = false;
         }
     }
 }

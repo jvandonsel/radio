@@ -9,7 +9,8 @@ export enum Band {
     OFF,
     A,
     B,
-    C
+    C,
+    UNKNOWN
 }
 
 /**
@@ -17,7 +18,6 @@ export enum Band {
  * @returns Band selector position
  */
 export function poll_band_selector() {
-  console.log(`fm=${band_a_gpio.readSync()} am=${band_b_gpio.readSync()} aux=${band_c_gpio.readSync()}`);
 
   if (band_a_gpio.readSync() === 0) {
     return Band.B;
