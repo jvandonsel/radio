@@ -9,6 +9,7 @@ import { sleep } from "./utils";
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
 import { getUrls } from "./urls";
 import { poll_band_selector as pollBandSelector, Band } from "./band-selector";
+import { set_power_led, set_tuning_led } from "./leds";
 
 export class Tuner {
 
@@ -16,8 +17,10 @@ export class Tuner {
     MIN_ADC_VALUE: number = 473;
     MAX_ADC_VALUE: number = 792;
 
-    RADIO_VOLUME = 80;
-    STATIC_VOLUME = 100;
+    RADIO_VOLUME = 50;
+    STATIC_VOLUME = 70;
+
+    //https://www.freedesktop.org/wiki/Software/PulseAudio/Documentation/User/SystemWide/
 
     MPLAYER_OPTIONS = ["-loop", "0", "-ao", "pulse", "-slave", "-really-quiet"];
 
@@ -100,6 +103,7 @@ export class Tuner {
 
         if (!this.radio_process) {
             this.radio_process = spawn('mplayer', [...this.MPLAYER_OPTIONS, '-volume', `${this.RADIO_VOLUME}`, url], { stdio: ['pipe', 'pipe', 'pipe'] });
+            this.radio_process.stdout.setEncoding('utf8');
         } else {
             // Already playing, change the URL
             this.radio_process.stdio[0].write(`pausing_keep_force loadfile ${url}\n`);
@@ -116,6 +120,7 @@ export class Tuner {
 
         if (!this.static_process) {
             this.static_process = spawn('mplayer', [...this.MPLAYER_OPTIONS, '-volume', `${this.STATIC_VOLUME}`, this.STATIC_FILE], { stdio: ['pipe', 'pipe', 'pipe'] });
+            this.static_process.stdout.setEncoding('utf8');
         } else {
             // Process already exists, unpause it
             console.log('Playing static');
@@ -132,7 +137,7 @@ export class Tuner {
 
         if (this.static_process) {
             console.log('Pausing static');
-            this.static_process.stdio[0].write('pausing_toggle pause\n');
+            this.static_process.stdio[0].write('pausing_keep pause\n');
         }
 
         this.is_static_playing = false;
@@ -146,7 +151,7 @@ export class Tuner {
 
         if (this.radio_process) {
             console.log('Pausing radio');
-            this.radio_process.stdio[0].write('pausing_toggle pause\n');
+            this.radio_process.stdio[0].write('pausing_keep pause\n');
         }
 
         this.is_radio_playing = false;
@@ -211,10 +216,13 @@ export class Tuner {
                 first_tune_on_band = true;
                 if (band == Band.OFF) {
                     // Switching off
+                    
                     this.pauseRadio();
                     this.pauseStatic();
                 } else {
                     // Switching to a different band
+                    set_power_led(true);
+                    set_tuning_led(false);
                     this.populateBand(band);
                     is_locked = false;
                     locked_center = 0;
@@ -224,6 +232,7 @@ export class Tuner {
             }
 
             if (band === Band.OFF) {
+                set_power_led(false);
                 await sleep(400);
                 continue;
             }
@@ -238,6 +247,7 @@ export class Tuner {
                         // Unlock
                         console.log(`Unlocking, filtered:${filtered_adc_value} last_locked:${locked_center}`);
                         is_locked = false;
+                        set_tuning_led(false);
                         this.pauseRadio();
                         this.playStatic();
                     } else {
@@ -252,6 +262,7 @@ export class Tuner {
                         const url = this.adc_to_url[nearest_center];
                         console.log(`Locking. center:${nearest_center} adc:${filtered_adc_value} ${url}`);
                         locked_center = nearest_center;
+                        set_tuning_led(true);
                         is_locked = true;
                         this.pauseStatic();
                         this.playRadio(url);
