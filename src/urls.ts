@@ -1,8 +1,13 @@
-
+/**
+ * Radio URLs for all 3 bands.
+ */
 import { Band } from "./band-selector";
 
 
-export function getUrls(band: Band) {
+/**
+ * Given a band, return the list of URLs for that band.
+ */
+export function getUrls(band: Band): string[] {
     if (band == Band.A) {
         return bbc_urls;
     } else if (band == Band.B) {
@@ -14,7 +19,7 @@ export function getUrls(band: Band) {
     }
 }
 
-export const bbc_urls = [
+const bbc_urls = [
     "http://a.files.bbci.co.uk/media/live/manifesto/audio/simulcast/hls/nonuk/sbr_low/ak/bbc_radio_one.m3u8",
     "http://a.files.bbci.co.uk/media/live/manifesto/audio/simulcast/hls/nonuk/sbr_low/ak/bbc_1xtra.m3u8",
     "http://a.files.bbci.co.uk/media/live/manifesto/audio/simulcast/hls/nonuk/sbr_low/ak/bbc_radio_one_dance.m3u8",
@@ -27,7 +32,7 @@ export const bbc_urls = [
     "http://a.files.bbci.co.uk/media/live/manifesto/audio/simulcast/hls/nonuk/sbr_low/ak/bbc_world_service.m3u8"
 ];
 
-export const cbc_urls = [
+const cbc_urls = [
     // Taken from https://gist.github.com/nevillepark/d8358256e05a23250ad845a70776776e
 
     // CBC Music (Eastern)
@@ -52,14 +57,22 @@ export const cbc_urls = [
     "https://rcavliveaudio.akamaized.net/hls/live/2006979/M-7QMTL0_MTL/master.m3u8"
 ];
 
-export const us_urls = [
+const us_urls = [
+    // WHYY
     "http://whyy-hd.streamguys1.com/whyy-hd-mp3",
+    // WMBR
     "http://wmbr.org:8000/hi",
+    // WGVU
     "http://22223.live.streamtheworld.com:80/WGVUFM_SC",
+    // KWIT
     "https://playerservices.streamtheworld.com/api/livestream-redirect/KWITFM.mp3",
+    // 
     "https://cms.stream.publicradio.org/cms.mp3",
+    //
     "http://66.42.114.24:8000/live",
+    //WNED
     "http://22113.live.streamtheworld.com:80/WNEDFM_SC",
+    //
     "http://live.wostreaming.net/direct/ppm-jazz24mp3-ibc1"
     
 ];

@@ -17,16 +17,14 @@ export class Tuner {
     MIN_ADC_VALUE: number = 473;
     MAX_ADC_VALUE: number = 792;
 
+    // Volumes in percentage of max
     RADIO_VOLUME = 50;
     STATIC_VOLUME = 70;
 
-    //https://www.freedesktop.org/wiki/Software/PulseAudio/Documentation/User/SystemWide/
-
     MPLAYER_OPTIONS = ["-loop", "0", "-ao", "pulse", "-slave", "-really-quiet"];
 
-    // Static file
-    // TODO: Move this file someplace else
-    STATIC_FILE: string = "/static.wav";
+    // Sound file with static noise
+    STATIC_FILE: string = "static.wav";
 
     // Sliding window filter 
     FILTER_WINDOW_SIZE = 20;
@@ -45,7 +43,8 @@ export class Tuner {
     current_band: Band = Band.OFF;
 
     // Keeping separate radio and static processes active seems to make the transition between
-    // static/radio faster than having a single process that switches between the static file and the radio URL.
+    // static and radio faster than having a single process that switches between the static file
+    // and the radio URL.
     radio_process: ChildProcessWithoutNullStreams | undefined = undefined;
     static_process: ChildProcessWithoutNullStreams | undefined = undefined;
 
@@ -53,24 +52,20 @@ export class Tuner {
     is_static_playing: boolean = false;
 
     /**
-     * Given a selected band, populates the 'adc_stations' and 'adc_to_url' data structures
+     * Given a band, populates the 'adc_stations' and 'adc_to_url' data structures
      * @param band 
-     * @returns 
      */
-    populateBand(band: Band) {
+    populateBand(band: Band) : void {
 
         console.log(`Populating band ${band}`);
 
         // Get the list of URLs for the given band
         const urls = getUrls(band);
-
         const num_urls = urls.length;
-        console.log(`Found ${num_urls} URLs`);
 
         // Space our URLs across the dial evenly.
         // Making sure that both edges have a station.
         const url_step = Math.floor((this.MAX_ADC_VALUE - this.MIN_ADC_VALUE) / (num_urls - 1));
-        console.log(`step size=${url_step} between ${this.MIN_ADC_VALUE} and ${this.MAX_ADC_VALUE}`);
 
         this.adc_stations = [];
         this.adc_to_url = {};
@@ -86,7 +81,7 @@ export class Tuner {
      * Init the sliding window filter with the given value.
      * @param Value to fill the window with.
      */
-    initFilter(value: number) {
+    initFilter(value: number): void {
         this.adc_window.length = 0;
         for (let i = 0; i < this.FILTER_WINDOW_SIZE; ++i) {
             this.adc_window.push(value);
@@ -98,7 +93,7 @@ export class Tuner {
      * Start playing the given URL 
      * @param url URL to play
      */
-    async playRadio(url: string) {
+    async playRadio(url: string): Promise<void> {
         if (this.is_radio_playing) return;
 
         if (!this.radio_process) {
@@ -115,7 +110,7 @@ export class Tuner {
     /**
      * Start playing static.
      */
-    playStatic() {
+    playStatic(): void {
         if (this.is_static_playing) return;
 
         if (!this.static_process) {
@@ -132,7 +127,7 @@ export class Tuner {
     /**
      * Pause static
      */
-    pauseStatic() {
+    pauseStatic(): void {
         if (!this.is_static_playing) return;
 
         if (this.static_process) {
@@ -146,7 +141,7 @@ export class Tuner {
     /**
      * Pause playback
      */
-    pauseRadio() {
+    pauseRadio(): void {
         if (!this.is_radio_playing) return;
 
         if (this.radio_process) {
@@ -233,6 +228,7 @@ export class Tuner {
 
             if (band === Band.OFF) {
                 set_power_led(false);
+                set_tuning_led(false);
                 await sleep(400);
                 continue;
             }
