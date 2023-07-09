@@ -1,13 +1,17 @@
 # Model One Internet Radio Appliance
 
 ## Overview
-This is a streaming radio appliance built inside the chassis of an old [Tivoli Audio Model One Radio](https://tivoliaudio.com/products/model-one-classic-retro-am-fm-table-radio).  All electronics in the original radio were removed, and this project uses the following components from the original radio:
+This is a streaming radio appliance built inside the chassis of an old [Tivoli Audio Model One Radio](https://tivoliaudio.com/products/model-one-classic-retro-am-fm-table-radio).  The idea is to give 
+an analog-like radio experience while playing a fixed selection of streaming stations.
+
+All electronics in the original radio were removed, and this project retains the following components:
 
 - Wooden Cabinet
 - Front and back panels
 - Speaker
 - Volume knob
 - Band switch
+- Power and tuning LEDs
 - Tuning knob
 
 
@@ -21,6 +25,8 @@ The band select switch originally switched between OFF, FM, AM, and AUX. I ended
 The volume control pot is wired directly to the amplifier board.
 
 The tuning knob on the Model one is especially nice. It's big and is geared way down.  It originally was connected to a variable capacitor for RF tuning purposes, but here I've connected it to a 10K potentiometer which is monitored by an [MCP3008 10-bit A/D converter](https://www.adafruit.com/product/856) over SPI.
+
+The power and tuning LEDs on the front panel are driven directly by GPIOs.
 
 ## OS Configuration
 Since I'm using a Libre Potato board, I chose their version of [Raspbian](https://hub.libre.computer/t/raspbian-11-bullseye-for-libre-computer-boards/82). 

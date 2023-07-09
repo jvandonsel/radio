@@ -2,7 +2,7 @@
  * MPC3008 A/D Converter
  */
 
-import { openSync, SpiDevice, SpiMode, MODE3 } from 'spi-device';
+import { openSync, SpiDevice } from 'spi-device';
 
 export class AdcConverter {
 

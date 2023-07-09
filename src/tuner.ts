@@ -14,8 +14,8 @@ import { set_power_led, set_tuning_led } from "./leds";
 export class Tuner {
 
     // A/D values from the left to the right side of the tuning dial
-    MIN_ADC_VALUE: number = 473;
-    MAX_ADC_VALUE: number = 792;
+    MIN_ADC_VALUE = 473;
+    MAX_ADC_VALUE = 792;
 
     // Volumes in percentage of max
     RADIO_VOLUME = 50;
@@ -24,12 +24,12 @@ export class Tuner {
     MPLAYER_OPTIONS = ["-loop", "0", "-ao", "pulse", "-slave", "-really-quiet"];
 
     // Sound file with static noise
-    STATIC_FILE: string = "static.wav";
+    STATIC_FILE = "static.wav";
 
     // Sliding window filter 
     FILTER_WINDOW_SIZE = 20;
     adc_window: number[] = [];
-    adc_window_sum: number = 0;
+    adc_window_sum = 0;
     
     // A/D Converter
     adc: AdcConverter = new AdcConverter();
@@ -48,8 +48,8 @@ export class Tuner {
     radio_process: ChildProcessWithoutNullStreams | undefined = undefined;
     static_process: ChildProcessWithoutNullStreams | undefined = undefined;
 
-    is_radio_playing: boolean = false;
-    is_static_playing: boolean = false;
+    is_radio_playing = false;
+    is_static_playing = false;
 
     /**
      * Given a band, populates the 'adc_stations' and 'adc_to_url' data structures
@@ -186,9 +186,9 @@ export class Tuner {
      */
     public async tune() {
 
-        var is_locked = false;
-        var locked_center = 0;
-        var first_tune_on_band = true;
+        let is_locked = false;
+        let locked_center = 0;
+        let first_tune_on_band = true;
 
         // How close we need to be to a station center to lock onto it
         const PULL_IN_THRESHOLD = 3;
@@ -200,6 +200,7 @@ export class Tuner {
         console.log(`Seeding filter with ${adc}`);
         this.initFilter(adc);
 
+        /* eslint-disable no-constant-condition */
         while (true) {
             await sleep(100);
 
@@ -235,7 +236,7 @@ export class Tuner {
 
             try {
                 // Get the tuning knob A/D value
-                let filtered_adc_value = this.getFilteredAdcValue();
+                const filtered_adc_value = this.getFilteredAdcValue();
 
                 if (is_locked) {
                     // Currently Locked
