@@ -21,10 +21,11 @@ export class Tuner {
     RADIO_VOLUME = 50;
     STATIC_VOLUME = 70;
 
-    MPLAYER_OPTIONS = ["-loop", "0", "-ao", "pulse", "-slave", "-really-quiet"];
+    // MPLAYER_OPTIONS = ["-loop", "0", "-ao", "pulse", "-slave", "-really-quiet"];
+    MPLAYER_OPTIONS = ["-ao", "pulse", "-slave", "-really-quiet"];
 
     // Sound file with static noise
-    STATIC_FILE = "static.wav";
+    STATIC_FILE = "./lib/static.wav";
 
     // Sliding window filter 
     FILTER_WINDOW_SIZE = 20;
@@ -96,13 +97,16 @@ export class Tuner {
     async playRadio(url: string): Promise<void> {
         if (this.is_radio_playing) return;
 
-        if (!this.radio_process) {
+        if (!this.radio_process || this.radio_process.exitCode != null) {
+            console.log(`Starting  mplayer with URL ${url}`);
             this.radio_process = spawn('mplayer', [...this.MPLAYER_OPTIONS, '-volume', `${this.RADIO_VOLUME}`, url], { stdio: ['pipe', 'pipe', 'pipe'] });
             this.radio_process.stdout.setEncoding('utf8');
         } else {
             // Already playing, change the URL
+            console.log(`Changing URL to ${url}`);
             this.radio_process.stdio[0].write(`pausing_keep_force loadfile ${url}\n`);
             this.radio_process.stdio[0].write('pausing_keep pause\n');
+
         }
         this.is_radio_playing = true;
     }
@@ -114,7 +118,7 @@ export class Tuner {
         if (this.is_static_playing) return;
 
         if (!this.static_process) {
-            this.static_process = spawn('mplayer', [...this.MPLAYER_OPTIONS, '-volume', `${this.STATIC_VOLUME}`, this.STATIC_FILE], { stdio: ['pipe', 'pipe', 'pipe'] });
+            this.static_process = spawn('mplayer', [...this.MPLAYER_OPTIONS, '-loop', '0', '-volume', `${this.STATIC_VOLUME}`, this.STATIC_FILE], { stdio: ['pipe', 'pipe', 'pipe'] });
             this.static_process.stdout.setEncoding('utf8');
         } else {
             // Process already exists, unpause it

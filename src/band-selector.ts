@@ -4,8 +4,8 @@
 import {Gpio} from 'onoff';
 
 // GPIOs used to detect the band switch position.
-const band_a_gpio = new Gpio(492, 'in');
-const band_b_gpio = new Gpio(493, 'in');
+const band_a_gpio = new Gpio(493, 'in');
+const band_b_gpio = new Gpio(492, 'in');
 const band_c_gpio = new Gpio(494, 'in');
 
 export enum Band {
