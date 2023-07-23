@@ -20,15 +20,25 @@ export function getUrls(band: Band): string[] {
 }
 
 const bbc_urls = [
+    // Radio 1
     "http://a.files.bbci.co.uk/media/live/manifesto/audio/simulcast/hls/nonuk/sbr_low/ak/bbc_radio_one.m3u8",
+    // Radio 1 extra
     "http://a.files.bbci.co.uk/media/live/manifesto/audio/simulcast/hls/nonuk/sbr_low/ak/bbc_1xtra.m3u8",
+    // Radio 1 dance
     "http://a.files.bbci.co.uk/media/live/manifesto/audio/simulcast/hls/nonuk/sbr_low/ak/bbc_radio_one_dance.m3u8",
+    // Radio 1 relax
     "http://a.files.bbci.co.uk/media/live/manifesto/audio/simulcast/hls/nonuk/sbr_low/ak/bbc_radio_one_relax.m3u8",
+    // Radio 2
     "http://a.files.bbci.co.uk/media/live/manifesto/audio/simulcast/hls/nonuk/sbr_low/ak/bbc_radio_two.m3u8",
+    // Radio 3
     "http://a.files.bbci.co.uk/media/live/manifesto/audio/simulcast/hls/nonuk/sbr_low/ak/bbc_radio_three.m3u8",
+    // Radio 4 FM
     "http://a.files.bbci.co.uk/media/live/manifesto/audio/simulcast/hls/nonuk/sbr_low/ak/bbc_radio_fourfm.m3u8",
+    // Radio 4 extra
     "http://a.files.bbci.co.uk/media/live/manifesto/audio/simulcast/hls/nonuk/sbr_low/ak/bbc_radio_four_extra.m3u8",
+    // Radio 6 music
     "http://a.files.bbci.co.uk/media/live/manifesto/audio/simulcast/hls/nonuk/sbr_low/ak/bbc_6music.m3u8",
+    // World Service
     "http://a.files.bbci.co.uk/media/live/manifesto/audio/simulcast/hls/nonuk/sbr_low/ak/bbc_world_service.m3u8"
 ];
 
@@ -58,6 +68,8 @@ const cbc_urls = [
 ];
 
 const us_urls = [
+    // WGBH
+    "https://hls.audio.wgbh.org/wgbh_hls/playlist.m3u8",
     // WHYY
     "http://whyy-hd.streamguys1.com/whyy-hd-mp3",
     // WMBR
@@ -68,11 +80,11 @@ const us_urls = [
     "https://playerservices.streamtheworld.com/api/livestream-redirect/KWITFM.mp3",
     // 
     "https://cms.stream.publicradio.org/cms.mp3",
-    //
+    // Classical Oasis
     "http://66.42.114.24:8000/live",
-    //WNED
+    // WNED
     "http://22113.live.streamtheworld.com:80/WNEDFM_SC",
-    //
+    // Jazz24
     "http://live.wostreaming.net/direct/ppm-jazz24mp3-ibc1"
     
 ];

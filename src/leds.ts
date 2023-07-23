@@ -1,10 +1,10 @@
 /**
- *   Fron panel LED control
+ *   Front panel LED control
  */
 import {Gpio} from 'onoff';
 
-const power_led_gpio = new Gpio(495, 'out');
-const tuning_led_gpio = new Gpio(480, 'out');
+const power_led_gpio = new Gpio(480, 'out');
+const tuning_led_gpio = new Gpio(495, 'out');
 
 export function set_power_led(on: boolean): void {
     power_led_gpio.writeSync(on ? 1: 0);
