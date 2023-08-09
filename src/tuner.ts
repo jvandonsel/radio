@@ -18,8 +18,8 @@ export class Tuner {
     MAX_ADC_VALUE = 792;
 
     // Volumes in percentage of max
-    RADIO_VOLUME = 30;
-    STATIC_VOLUME = 50;
+    RADIO_VOLUME = 40;
+    STATIC_VOLUME = 60;
 
     // mplayer arguments
     MPLAYER_OPTIONS = ["-ao", "pulse", "-slave", "-really-quiet"];
@@ -148,10 +148,10 @@ export class Tuner {
       * Stop static
      */
     stopStatic(): void {
-        if (!this.is_static_playing) return;
 
         if (this.static_process) {
-            this.static_process.kill();
+            // FIXME: this still leaves child processes around
+            this.static_process.kill('SIGKILL');
             this.static_process = undefined;
         }
 
@@ -175,10 +175,10 @@ export class Tuner {
      * Stop playback
      */
     stopRadio(): void {
-        if (!this.is_radio_playing) return;
 
         if (this.radio_process) {
-            this.radio_process.kill();
+            // FIXME: this still leaves child processes around
+            this.radio_process.kill('SIGKILL');
             this.radio_process = undefined;
         }
 
