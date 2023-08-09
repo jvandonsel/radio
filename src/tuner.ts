@@ -18,10 +18,10 @@ export class Tuner {
     MAX_ADC_VALUE = 792;
 
     // Volumes in percentage of max
-    RADIO_VOLUME = 50;
-    STATIC_VOLUME = 70;
+    RADIO_VOLUME = 30;
+    STATIC_VOLUME = 50;
 
-    // MPLAYER_OPTIONS = ["-loop", "0", "-ao", "pulse", "-slave", "-really-quiet"];
+    // mplayer arguments
     MPLAYER_OPTIONS = ["-ao", "pulse", "-slave", "-really-quiet"];
 
     // Sound file with static noise
@@ -91,7 +91,7 @@ export class Tuner {
     }
 
     /**
-     * Start playing the given URL 
+     * Play the given URL 
      * @param url URL to play
      */
     async playRadio(url: string): Promise<void> {
@@ -104,6 +104,7 @@ export class Tuner {
         } else {
             // Already playing, change the URL
             console.log(`Changing URL to ${url}`);
+            // mplayer slave mode docs: http://www.mplayerhq.hu/DOCS/tech/slave.txt
             this.radio_process.stdio[0].write(`pausing_keep_force loadfile ${url}\n`);
             this.radio_process.stdio[0].write('pausing_keep pause\n');
 
@@ -112,7 +113,7 @@ export class Tuner {
     }
 
     /**
-     * Start playing static.
+     * Play a static sound
      */
     playStatic(): void {
         if (this.is_static_playing) return;
@@ -123,6 +124,7 @@ export class Tuner {
         } else {
             // Process already exists, unpause it
             console.log('Playing static');
+            // mplayer slave mode docs: http://www.mplayerhq.hu/DOCS/tech/slave.txt
             this.static_process.stdio[0].write('pausing_keep pause\n');
         }
         this.is_static_playing = true;
@@ -141,7 +143,20 @@ export class Tuner {
 
         this.is_static_playing = false;
     }
+    
+    /**
+      * Stop static
+     */
+    stopStatic(): void {
+        if (!this.is_static_playing) return;
 
+        if (this.static_process) {
+            this.static_process.kill();
+            this.static_process = undefined;
+        }
+
+        this.is_static_playing = false;
+    }
     /**
      * Pause playback
      */
@@ -155,6 +170,20 @@ export class Tuner {
 
         this.is_radio_playing = false;
     }
+
+    /**
+     * Stop playback
+     */
+    stopRadio(): void {
+        if (!this.is_radio_playing) return;
+
+        if (this.radio_process) {
+            this.radio_process.kill();
+            this.radio_process = undefined;
+        }
+
+        this.is_radio_playing = false;
+    }    
 
     /**
      * Read a raw value from the ADC, filter it, and return a filtered value.
@@ -189,10 +218,12 @@ export class Tuner {
      * Never returns.
      */
     public async tune() {
-
+        
+        let first_tune_on_band = true;
+        
+        // Whether we're locked on a station or not
         let is_locked = false;
         let locked_center = 0;
-        let first_tune_on_band = true;
 
         // How close we need to be to a station center to lock onto it
         const PULL_IN_THRESHOLD = 3;
@@ -216,9 +247,8 @@ export class Tuner {
                 first_tune_on_band = true;
                 if (band == Band.OFF) {
                     // Switching off
-                    
-                    this.pauseRadio();
-                    this.pauseStatic();
+                    this.stopRadio();
+                    this.stopStatic();
                 } else {
                     // Switching to a different band
                     set_power_led(true);
@@ -243,7 +273,7 @@ export class Tuner {
                 const filtered_adc_value = this.getFilteredAdcValue();
 
                 if (is_locked) {
-                    // Currently Locked
+                    // Currently Locked on a station
                     if (Math.abs(filtered_adc_value - locked_center) > PULL_OFF_THRESHOLD) {
                         // Unlock
                         console.log(`Unlocking, filtered:${filtered_adc_value} last_locked:${locked_center}`);
@@ -255,7 +285,7 @@ export class Tuner {
                         // Still locked. Keep playing radio.
                     }
                 } else {
-                    // Currently not locked. Check if we should lock on a station.
+                    // Currently not locked on a station. Check if we should lock on a station.
                     // Find the nearest center ADC value and if it's close enough lock onto it.
                     const nearest_center = this.findNearestCenter(filtered_adc_value);
                     if (Math.abs(nearest_center - filtered_adc_value) <= PULL_IN_THRESHOLD) {
@@ -268,7 +298,7 @@ export class Tuner {
                         this.pauseStatic();
                         this.playRadio(url);
                     } else {
-                        // Still unlocked unlocked, keep playing static.
+                        // Still unlocked. Keep playing static.
                         if (first_tune_on_band) {
                             this.playStatic();
                         }
