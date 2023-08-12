@@ -20,7 +20,7 @@ export class Tuner {
 
     // Volumes in percentage of max
     RADIO_VOLUME = 40;
-    STATIC_VOLUME = 50;
+    STATIC_VOLUME = 30;
 
     // mplayer arguments
     MPLAYER_OPTIONS = ["-ao", "pulse", "-slave", "-really-quiet"];

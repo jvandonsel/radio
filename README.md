@@ -6,7 +6,7 @@ an analog-like radio experience while playing a fixed selection of streaming sta
 
 After building this project I realized someone [had done it before](https://hackaday.com/2022/09/22/simple-internet-radio-transplant/) and I probably had seen the Hackaday post and only 
 subconsciously remembered it.
-I did a few things differently than Blake did in that hack.  For one, I have a dedicated amplifier board and tied the volume pot directly to that amp, eliminating one of the A/D channels
+I did a few things differently than the builder of that Hackaday post did.  For one, I have a dedicated amplifier board and tied the volume pot directly to that amp, eliminating one of the A/D channels
 and allowing smoother volume changes. I also made the on/off switch soft, merely shutting off the front LEDs and silencing the audio.  The on/off/band select switch allows for 3 different
 bands of stations.
 
