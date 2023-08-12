@@ -1,5 +1,7 @@
 # Model One Internet Radio Appliance
 
+![front](front.jpg)
+
 ## Overview
 This is a streaming radio appliance built inside the chassis of an old [Tivoli Audio Model One Radio](https://tivoliaudio.com/products/model-one-classic-retro-am-fm-table-radio).  The idea is to give 
 an analog-like radio experience while playing a fixed selection of streaming stations.
