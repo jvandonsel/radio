@@ -13,13 +13,14 @@ import { set_power_led, set_tuning_led } from "./leds";
 
 export class Tuner {
 
-    // A/D values from the left to the right side of the tuning dial
-    MIN_ADC_VALUE = 473;
-    MAX_ADC_VALUE = 792;
+    // A/D values from the left to the right side of the tuning dial.
+    // Determined empirically by measuring the ADC value at both ends.
+    MIN_ADC_VALUE = 470;
+    MAX_ADC_VALUE = 790;
 
     // Volumes in percentage of max
     RADIO_VOLUME = 40;
-    STATIC_VOLUME = 60;
+    STATIC_VOLUME = 50;
 
     // mplayer arguments
     MPLAYER_OPTIONS = ["-ao", "pulse", "-slave", "-really-quiet"];
@@ -28,7 +29,7 @@ export class Tuner {
     STATIC_FILE = "./lib/static.wav";
 
     // Sliding window filter 
-    FILTER_WINDOW_SIZE = 20;
+    FILTER_WINDOW_SIZE = 10;
     adc_window: number[] = [];
     adc_window_sum = 0;
     
@@ -41,6 +42,7 @@ export class Tuner {
     // Map of ADC values to radio station URL
     adc_to_url: Record<number, string> = {};
 
+    // The current state of the band selector switch
     current_band: Band = Band.OFF;
 
     // Keeping separate radio and static processes active seems to make the transition between
@@ -196,8 +198,9 @@ export class Tuner {
         // Add to sliding window filter and get the filtered value
         this.adc_window.push(raw_value);
         this.adc_window_sum += raw_value;
+        // Remove oldest value
         this.adc_window_sum -= this.adc_window.shift() ?? 0;
-        const filtered_value = Math.floor(this.adc_window_sum / this.FILTER_WINDOW_SIZE);
+        const filtered_value = Math.round(this.adc_window_sum / this.FILTER_WINDOW_SIZE);
 
        // console.log(`ADC: ${raw_value}, filtered: ${filtered_value}`);
 
@@ -219,8 +222,6 @@ export class Tuner {
      */
     public async tune() {
         
-        let first_tune_on_band = true;
-        
         // Whether we're locked on a station or not
         let is_locked = false;
         let locked_center = 0;
@@ -232,7 +233,6 @@ export class Tuner {
 
         // Seed the sliding window with the current raw ADC value
         const adc = this.adc.readAdc();
-        console.log(`Seeding filter with ${adc}`);
         this.initFilter(adc);
 
         /* eslint-disable no-constant-condition */
@@ -244,7 +244,6 @@ export class Tuner {
             if (band !== this.current_band) {
                 console.log(`Switching band to ${band}`);
                 this.current_band = band;
-                first_tune_on_band = true;
                 if (band == Band.OFF) {
                     // Switching off
                     this.stopRadio();
@@ -257,11 +256,12 @@ export class Tuner {
                     is_locked = false;
                     locked_center = 0;
                     this.pauseRadio();
-                    this.pauseStatic();
+                    this.playStatic();
                 }
             }
 
             if (band === Band.OFF) {
+                // Still off
                 set_power_led(false);
                 set_tuning_led(false);
                 await sleep(400);
@@ -299,16 +299,11 @@ export class Tuner {
                         this.playRadio(url);
                     } else {
                         // Still unlocked. Keep playing static.
-                        if (first_tune_on_band) {
-                            this.playStatic();
-                        }
                     }
                 }
             } catch (e) {
                 console.error(`Caught error reading ADC: ${e}\n`);
             }
-
-            first_tune_on_band = false;
         }
     }
 }
