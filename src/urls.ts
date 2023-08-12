@@ -1,5 +1,6 @@
 /**
  * Radio URLs for all 3 bands.
+ * Useful repository of URLs: https://streamurl.link/
  */
 import { Band } from "./band-selector";
 
@@ -43,28 +44,24 @@ const bbc_urls = [
 ];
 
 const cbc_urls = [
-    // Taken from https://gist.github.com/nevillepark/d8358256e05a23250ad845a70776776e
+    // CBC Radio One Halifax
+    "https://playerservices.streamtheworld.com/api/livestream-redirect/CBHA_CBC.mp3",
 
-    // CBC Music (Eastern)
-    "http://cbcmp3.ic.llnwd.net/stream/cbcmp3_cbc_r1_tor",
+    // CBC Radio One Edmonton
+    "https://playerservices.streamtheworld.com/api/livestream-redirect/CBXAM_CBC.mp3",
 
-    // CBC Music (Eastern)
-    "https://cbcradiolive.akamaized.net/hls/live/2041057/ES_R2ETR/master.m3u8",
+    // CBC Music Toronto
+    "https://playerservices.streamtheworld.com/api/livestream-redirect/CBLFM_CBC.mp3",
 
-    // CBC Radio 1 (NB/Saint John)
-    "http://cbcmp3.ic.llnwd.net/stream/cbcmp3_cbc_r1_snb",
+    // CBC Radio One Ottawa
+    "https://playerservices.streamtheworld.com/api/livestream-redirect/CBOFM_CBC.mp3",
 
-    // CBC Radio 1 (ON/Toronto)
-    "http://cbcmp3.ic.llnwd.net/stream/cbcmp3_cbc_r1_tor",
+    // CBC Radio One St. John's
+    "https://playerservices.streamtheworld.com/api/livestream-redirect/CBN1_CBC.mp3",
 
-    // CBC Radio 1 (QC/Montréal)
-    "http://cbcmp3.ic.llnwd.net/stream/cbcmp3_cbc_r1_mtl",
-
-    // CBC Radio 1 (NS/Halifax)
-    "http://cbcmp3.ic.llnwd.net/stream/cbcmp3_cbc_r1_hfx",
-
-    // Ici Musique (Montréal, Toronto, Windsor)
-    "https://rcavliveaudio.akamaized.net/hls/live/2006979/M-7QMTL0_MTL/master.m3u8"
+    // CBC Music Halifax
+    "https://playerservices.streamtheworld.com/api/livestream-redirect/CBH_CBC.mp3"
+        
 ];
 
 const us_urls = [
