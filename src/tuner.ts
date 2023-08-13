@@ -203,9 +203,6 @@ export class Tuner {
         // Remove oldest value
         this.adc_window_sum -= this.adc_window.shift() ?? 0;
         const filtered_value = Math.round(this.adc_window_sum / this.FILTER_WINDOW_SIZE);
-
-       // console.log(`ADC: ${raw_value}, filtered: ${filtered_value}`);
-
         return filtered_value;
     }
 
@@ -214,7 +211,6 @@ export class Tuner {
      * @param adc_value 
      */
     findNearestCenter(adc_value: number): number {
-        // TODO: cache these?
         return this.adc_stations.reduce((a, b) => Math.abs(b - adc_value) < Math.abs(a - adc_value) ? b : a);
     }
 

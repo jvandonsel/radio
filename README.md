@@ -49,8 +49,54 @@ for running Pulseaudio as a system (as opposed to user) service.  They do strong
 
 As per the guide, I disabled the two PulseAudio user services and created two in the /lib/systemd/system/ directory, with pulse launched with the --system switch.
 
+/lib/systemd/system/pulseaudio-root.service:
+
+```
+[Unit]
+Description=Pulse Audio Root
+
+Requires=pulseaudio-root.socket
+
+[Service]
+ExecStart=/usr/bin/pulseaudio --system
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+NoNewPrivileges=yes
+Restart=on-failure
+RestrictNamespaces=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+# Note that notify will only work if --daemonize=no
+Type=notify
+UMask=0077
+
+[Install]
+Also=pulseaudio-root.socket
+WantedBy=default.target
+```
+
 The radio application itself is also launched as a system service, using a user who was added to the proper pulse user groups.
 
+/lib/systemd/system/radio.service:
+```
+[Unit]
+Description=Streaming radio service
+Requires=network.target
+Wants=sound.target
+After=sound.target
+
+[Install]
+WantedBy=multi-user.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/jvandonsel/radio
+ExecStart=/usr/local/lib/nodejs/bin/nodejs ./lib/index.js
+RemainAfterExit=true
+
+User=jvandonsel
+Group=jvandonsel
+```
 
 ## Software
 
@@ -65,8 +111,5 @@ ADC output of the tuning knob turned out to be a bit noisy, too, so I added some
 
 This radio uses [mplayer](http://www.mplayerhq.hu) to play the actual radio streams. To speed up transitions betwen stations and between stations and static, 
 two mplayer processes are started and kept running forever, one for radio and one to play a wav file contaiing radio static. I start mplayer in slave mode, meaning commands to change the URL and to pause and resume the player are injected into stdin.
-
-Code was composed in [Emacs](https://www.gnu.org/software/emacs/).
-
 
 
