@@ -108,7 +108,7 @@ export class Tuner {
             console.log(`Changing URL to ${url}`);
             // mplayer slave mode docs: http://www.mplayerhq.hu/DOCS/tech/slave.txt
             this.radio_process.stdio[0].write(`pausing_keep_force loadfile ${url}\n`);
-            this.radio_process.stdio[0].write('pausing_keep pause\n');
+            this.radio_process.stdio[0].write('pause\n');
 
         }
         this.is_radio_playing = true;
@@ -127,7 +127,7 @@ export class Tuner {
             // Process already exists, unpause it
             console.log('Playing static');
             // mplayer slave mode docs: http://www.mplayerhq.hu/DOCS/tech/slave.txt
-            this.static_process.stdio[0].write('pausing_keep pause\n');
+            this.static_process.stdio[0].write('pause\n');
         }
         this.is_static_playing = true;
     }
@@ -140,7 +140,8 @@ export class Tuner {
 
         if (this.static_process) {
             console.log('Pausing static');
-            this.static_process.stdio[0].write('pausing pause\n');
+            // 'pausing get_property pause' is guaranteed to pause if playing, and do nothing if paused.
+            this.static_process.stdio[0].write('pausing get_property pause\n');
         }
 
         this.is_static_playing = false;
@@ -154,7 +155,8 @@ export class Tuner {
 
         if (this.radio_process) {
             console.log('Pausing radio');
-            this.radio_process.stdio[0].write('pausing pause\n');
+            // 'pausing get_property pause' is guaranteed to pause if playing, and do nothing if paused.
+            this.radio_process.stdio[0].write('pausing get_property pause\n');
         }
 
         this.is_radio_playing = false;
