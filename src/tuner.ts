@@ -29,7 +29,7 @@ export class Tuner {
     STATIC_FILE = "./lib/static.wav";
 
     // Sliding window filter 
-    FILTER_WINDOW_SIZE = 10;
+    FILTER_WINDOW_SIZE = 25;
     adc_window: number[] = [];
     adc_window_sum = 0;
     
@@ -140,10 +140,24 @@ export class Tuner {
 
         if (this.static_process) {
             console.log('Pausing static');
-            this.static_process.stdio[0].write('pausing_keep pause\n');
+            this.static_process.stdio[0].write('pausing pause\n');
         }
 
         this.is_static_playing = false;
+    }
+    
+    /**
+     * Pause playback
+     */
+    pauseRadio(): void {
+        if (!this.is_radio_playing) return;
+
+        if (this.radio_process) {
+            console.log('Pausing radio');
+            this.radio_process.stdio[0].write('pausing pause\n');
+        }
+
+        this.is_radio_playing = false;
     }
     
     /**
@@ -159,20 +173,6 @@ export class Tuner {
 
         this.is_static_playing = false;
     }
-    /**
-     * Pause playback
-     */
-    pauseRadio(): void {
-        if (!this.is_radio_playing) return;
-
-        if (this.radio_process) {
-            console.log('Pausing radio');
-            this.radio_process.stdio[0].write('pausing_keep pause\n');
-        }
-
-        this.is_radio_playing = false;
-    }
-
     /**
      * Stop playback
      */
@@ -237,7 +237,7 @@ export class Tuner {
 
         /* eslint-disable no-constant-condition */
         while (true) {
-            await sleep(100);
+            await sleep(50);
 
             // Check if our band selector has changed
             const band = pollBandSelector();
@@ -264,7 +264,7 @@ export class Tuner {
                 // Still off
                 set_power_led(false);
                 set_tuning_led(false);
-                await sleep(400);
+                await sleep(500);
                 continue;
             }
 
