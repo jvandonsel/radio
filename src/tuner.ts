@@ -23,7 +23,7 @@ export class Tuner {
     STATIC_VOLUME = 30;
 
     // mplayer arguments
-    MPLAYER_OPTIONS = ["-ao", "pulse", "-slave", "-really-quiet"];
+    MPLAYER_OPTIONS = ["-ao", "pulse", "-slave", "-really-quiet", "-af", "pan=1:0.5:0.5"];
 
     // Sound file with static noise
     STATIC_FILE = "./lib/static.wav";
