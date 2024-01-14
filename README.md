@@ -109,7 +109,7 @@ I've spent quite a bit of time trying to replicate the feel of tuning an analog 
 and the radio tries to "lock onto" nearby stations.  It's still not quite the same experience as with an actual analog radio, though, and I can see this being a never ending source of tweaks. The
 ADC output of the tuning knob turned out to be a bit noisy, too, so I added some filtering to smooth it out.
 
-This radio uses [VLCD](https://wiki.videolan.org/Documentation:User_Guide/) to play the actual radio streams. To speed up transitions betwen stations and between stations and static, 
+This radio uses [VLC](https://wiki.videolan.org/Documentation:User_Guide/) to play the actual radio streams. To speed up transitions betwen stations and between stations and static, 
 two VLC processes are started and kept running forever, one for radio and one to play a wav file contaiing radio static. Commands to change the URL and to pause and resume the player are injected into stdin.
 
 

@@ -96,7 +96,7 @@ export class Tuner {
      * Play the given URL 
      * @param url URL to play
      */
-    async playRadio(url: string): Promise<void> {
+    playRadio(url: string): void {
         if (this.is_radio_playing) return;
 
         if (!this.radio_process || this.radio_process.exitCode != null) {
@@ -118,6 +118,7 @@ export class Tuner {
         if (this.is_static_playing) return;
 
         if (!this.static_process) {
+            console.log("Starting static process")
             this.static_process = spawn('vlc', [...this.VLC_OPTIONS, '--loop','--gain', `${this.STATIC_VOLUME}`, this.STATIC_FILE], { stdio: ['pipe', 'pipe', 'pipe'] });
             this.static_process.stdout.setEncoding('utf8');
         } else {
@@ -251,6 +252,8 @@ export class Tuner {
                     locked_center = 0;
                     this.pauseRadio();
                     this.playStatic();
+                    // Sleep a momment, otherwise stdin commands to the static process won't work
+                    await sleep(500);
                 }
             }
 
