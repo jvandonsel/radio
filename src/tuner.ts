@@ -18,12 +18,12 @@ export class Tuner {
     MIN_ADC_VALUE = 470;
     MAX_ADC_VALUE = 790;
 
-    // Volumes in percentage of max
-    RADIO_VOLUME = 40;
-    STATIC_VOLUME = 30;
+    // Volumes 
+    RADIO_VOLUME = 0.05;
+    STATIC_VOLUME = 0.1;
 
-    // mplayer arguments
-    MPLAYER_OPTIONS = ["-ao", "pulse", "-slave", "-really-quiet", "-af", "pan=1:0.5:0.5"];
+    // VLC arguments
+    VLC_OPTIONS = [];
 
     // Sound file with static noise
     STATIC_FILE = "./lib/static.wav";
@@ -100,16 +100,13 @@ export class Tuner {
         if (this.is_radio_playing) return;
 
         if (!this.radio_process || this.radio_process.exitCode != null) {
-            console.log(`Starting  mplayer with URL ${url}`);
-            this.radio_process = spawn('mplayer', [...this.MPLAYER_OPTIONS, '-volume', `${this.RADIO_VOLUME}`, url], { stdio: ['pipe', 'pipe', 'pipe'] });
+            console.log(`Starting VLC with URL ${url}`);
+            this.radio_process = spawn('vlc', [...this.VLC_OPTIONS, '--gain', `${this.RADIO_VOLUME}`, url], { stdio: ['pipe', 'pipe', 'pipe'] });
             this.radio_process.stdout.setEncoding('utf8');
         } else {
             // Already playing, change the URL
             console.log(`Changing URL to ${url}`);
-            // mplayer slave mode docs: http://www.mplayerhq.hu/DOCS/tech/slave.txt
-            this.radio_process.stdio[0].write(`pausing_keep_force loadfile ${url}\n`);
-            this.radio_process.stdio[0].write('pause\n');
-
+            this.radio_process.stdio[0].write(`add ${url}\n`);
         }
         this.is_radio_playing = true;
     }
@@ -121,13 +118,12 @@ export class Tuner {
         if (this.is_static_playing) return;
 
         if (!this.static_process) {
-            this.static_process = spawn('mplayer', [...this.MPLAYER_OPTIONS, '-loop', '0', '-volume', `${this.STATIC_VOLUME}`, this.STATIC_FILE], { stdio: ['pipe', 'pipe', 'pipe'] });
+            this.static_process = spawn('vlc', [...this.VLC_OPTIONS, '--loop','--gain', `${this.STATIC_VOLUME}`, this.STATIC_FILE], { stdio: ['pipe', 'pipe', 'pipe'] });
             this.static_process.stdout.setEncoding('utf8');
         } else {
             // Process already exists, unpause it
             console.log('Playing static');
-            // mplayer slave mode docs: http://www.mplayerhq.hu/DOCS/tech/slave.txt
-            this.static_process.stdio[0].write('pause\n');
+            this.static_process.stdio[0].write('play\n');
         }
         this.is_static_playing = true;
     }
@@ -141,7 +137,7 @@ export class Tuner {
         if (this.static_process) {
             console.log('Pausing static');
             // 'pausing get_property pause' is guaranteed to pause if playing, and do nothing if paused.
-            this.static_process.stdio[0].write('pausing get_property pause\n');
+            this.static_process.stdio[0].write('pause\n');
         }
 
         this.is_static_playing = false;
@@ -156,7 +152,7 @@ export class Tuner {
         if (this.radio_process) {
             console.log('Pausing radio');
             // 'pausing get_property pause' is guaranteed to pause if playing, and do nothing if paused.
-            this.radio_process.stdio[0].write('pausing get_property pause\n');
+            this.radio_process.stdio[0].write('pause\n');
         }
 
         this.is_radio_playing = false;
@@ -213,7 +209,7 @@ export class Tuner {
     findNearestCenter(adc_value: number): number {
         return this.adc_stations.reduce((a, b) => Math.abs(b - adc_value) < Math.abs(a - adc_value) ? b : a);
     }
-
+    
     /**
      * Continuously monitor the tuning ADC and play the appropriate station.
      * Never returns.
