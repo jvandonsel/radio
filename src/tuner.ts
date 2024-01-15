@@ -20,7 +20,7 @@ export class Tuner {
 
     // Volumes 
     RADIO_VOLUME = 0.05;
-    STATIC_VOLUME = 0.1;
+    STATIC_VOLUME = 0.05;
 
     // VLC arguments
     VLC_OPTIONS = [];
@@ -112,21 +112,31 @@ export class Tuner {
     }
 
     /**
+     * Starts the static process. Starts paused.
+     */
+    startStatic(): void {
+        if (!this.static_process) {
+            console.log("Starting static process")
+            this.static_process = spawn('vlc', [...this.VLC_OPTIONS, '--start-paused', '--loop','--gain', `${this.STATIC_VOLUME}`, this.STATIC_FILE], { stdio: ['pipe', 'pipe', 'pipe'] });
+            this.static_process.stdout.setEncoding('utf8');
+        } 
+    }
+    /**
      * Play a static sound
      */
     playStatic(): void {
         if (this.is_static_playing) return;
 
         if (!this.static_process) {
-            console.log("Starting static process")
-            this.static_process = spawn('vlc', [...this.VLC_OPTIONS, '--loop','--gain', `${this.STATIC_VOLUME}`, this.STATIC_FILE], { stdio: ['pipe', 'pipe', 'pipe'] });
-            this.static_process.stdout.setEncoding('utf8');
-        } else {
+            this.startStatic();
+        }
+
+        if (this.static_process) {
             // Process already exists, unpause it
             console.log('Playing static');
             this.static_process.stdio[0].write('play\n');
+            this.is_static_playing = true;
         }
-        this.is_static_playing = true;
     }
 
     /**
@@ -240,7 +250,7 @@ export class Tuner {
                 console.log(`Switching band to ${band}`);
                 this.current_band = band;
                 if (band == Band.OFF) {
-                    // Switching off
+                    // Switching off. Kill radio and static processes.
                     this.stopRadio();
                     this.stopStatic();
                 } else {
@@ -251,8 +261,8 @@ export class Tuner {
                     is_locked = false;
                     locked_center = 0;
                     this.pauseRadio();
-                    this.playStatic();
-                    // Sleep a momment, otherwise stdin commands to the static process won't work
+                    this.startStatic();
+                    // Give the VLC processes time to start up before receiving stdin commands
                     await sleep(500);
                 }
             }
@@ -296,6 +306,7 @@ export class Tuner {
                         this.playRadio(url);
                     } else {
                         // Still unlocked. Keep playing static.
+                        this.playStatic();
                     }
                 }
             } catch (e) {
