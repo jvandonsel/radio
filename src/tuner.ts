@@ -19,8 +19,8 @@ export class Tuner {
     MAX_ADC_VALUE = 790;
 
     // Volumes 
-    RADIO_VOLUME = 0.05;
-    STATIC_VOLUME = 0.05;
+    RADIO_VOLUME = 0.1;
+    STATIC_VOLUME = 0.1;
 
     // VLC arguments
     VLC_OPTIONS = [];
